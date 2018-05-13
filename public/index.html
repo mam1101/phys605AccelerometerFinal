@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>The Accelerometer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/static/css/materialize.min.css">
+    <link rel="stylesheet" href="/static/css/materialize_icon.css">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <script src="/static/js/react.development.js"></script>
+    <script src="/static/js/react-dom.development.js"></script>
+    <script src="/static/js/babel.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body class="light-blue">
+	<div class="container">
+		<div class="row">
+			<div id="value_space"></div>
+		</div>
+		<div class="row">
+			<div id="tester" style="width:100%;height:400px;"></div>
+		</div>
+		<div class="row">
+			<button id="btnPause" onclick="changePause()" class="waves-effect waves-light btn red">Pause</button>
+		</div>
+	</div>
+<script src="/static/js/jquery-3.3.1.min.js"></script>
+<script src="/static/js/materialize.min.js"></script>
+<script type="text/babel">
+	var ws = null;
+    var socketIsOpen = false;
+    var X = [0]
+    var Y = []
+    var max = 100
+    var TESTER = document.getElementById('tester');
+
+    var pause = false;
+	
+	var count = 0
+	var x_counter = 0
+	var average = 0
+	var displayAverage = 0
+
+	Plotly.plot( TESTER, [{
+	y: Y }], {
+	margin: { t: 0 }, showlegend: false } );
+
+    if ("WebSocket" in window) {
+        ws = new WebSocket('ws://' + window.location.host + '/ws')
+        
+        ws.onopen = function() {
+            socketIsOpen = true;
+            console.log("Open")
+        };
+        
+
+        ws.onmessage = function (evt) { 
+            var received_msg = evt.data;
+            //console.log('Message is received: ' + received_msg);
+            
+            var responseJson = JSON.parse(evt.data);
+
+            if (!pause){
+            	var useResponse = responseJson.value.substring(1, responseJson.value.length -3)
+            	if (useResponse.length > 0 || !responseJson.value.includes("\n")){
+		            if (!isNaN(parseInt(useResponse))) {
+		            	if (!(useResponse < 0)){
+		            		Y.push(parseInt(useResponse))
+				            console.log(parseInt(useResponse))
+				            Plotly.extendTraces(TESTER, {y: [Y]}, [0])
+				           	const element = (
+				                <div className="center-align">
+				                    <h1 className="white-text">Current Capacitance:</h1>
+				                    <h3 className="white-text">{ useResponse } Units</h3>
+				                </div>
+				            );
+				            ReactDOM.render(element,document.getElementById('value_space'))
+				            count += 1
+		            	}
+		        	}
+				}
+        	}
+            
+        };
+    }else{
+        alert("You must use a browser which allows for web sockets to continue.")
+    }
+
+    function changePause() {
+    	pause = pause == false;
+    	if (pause){
+    		document.getElementById("btnPause").innerHTML = "Resume"
+    	}else{
+    	    document.getElementById("btnPause").innerHTML = "Pause"
+    	}
+	}
+</script>
+<script type="text/javascript">
+	
+</script>
+</body>
+
